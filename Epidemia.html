@@ -20,22 +20,22 @@ body{
 	<div>
 		<div>
 			<div>
-				<input id="populationSpread" type="checkbox" onChange="disease.spreadEveryone = this.checked" checked>
+				<input id="populationSpread" type="checkbox" onChange="input[this.id](this)" checked>
 				<label for="populationSpread">Population avoid</label>
 			</div>
 			<div>
-				<input id="deathTransmission" type="checkbox" onChange="disease.deathTransmission = this.checked">
+				<input id="deathTransmission" type="checkbox" onChange="input[this.id](this)">
 				<label for="deathTransmission">Transmission after death</label>
 			</div>
 		</div>
 		<div>
 			<div>
-				<input id="infectionRadius" type="checkbox" onChange="log.infectionRadius = this.checked">
-				<label for="infectionRadius">Show infection radius</label>
+				<input id="showInfectionRadius" type="checkbox" onChange="input[this.id](this)">
+				<label for="showInfectionRadius">Show infection radius</label>
 			</div>
 			<div>
-				<input id="displayDirection" type="checkbox" onChange="log.displayDirection = this.checked">
-				<label for="displayDirection">Show direction</label>
+				<input id="showDirection" type="checkbox" onChange="input[this.id](this)">
+				<label for="showDirection">Show direction</label>
 			</div>
 		</div>
 		<button onclick="game.speed > 0 ? game.setSpeed(0) : game.setSpeed(60)">Start/Pause</button>
@@ -76,11 +76,43 @@ body{
 		//(function, millisecond)
 		setInterval(draw, 1000/game.fps);
 		game.setSpeed(60);
+
+		//Get input information
+		input.update();
+	}
+
+	//Input dealer
+	const input = {
+		update: function()
+		{
+			var input = document.getElementsByTagName('input');
+
+			for (var i = 0; i < input.length; i++)
+			{
+				this[input[i].id](input[i]);
+			}
+		},
+		populationSpread: function(object)
+		{
+			disease.spreadEveryone = object.checked;
+		},
+		deathTransmission: function(object)
+		{
+			disease.deathTransmission = object.checked;
+		},
+		showInfectionRadius: function(object)
+		{
+			log.showInfectionRadius = object.checked;
+		},
+		showDirection: function(object)
+		{
+			log.showDirection = object.checked;
+		}
 	}
 
 	var log = {
-		displayDirection: false,
-		infectionRadius: false
+		showDirection: false,
+		showInfectionRadius: false
 	}
 
 	const disease = {
@@ -429,7 +461,7 @@ body{
 			ctx.fill();
 
 			//Draw infection radius
-			if (log.infectionRadius && cobaia[i].isInfected && (cobaia[i].isDead == false || disease.deathTransmission))
+			if (log.showInfectionRadius && cobaia[i].isInfected && (cobaia[i].isDead == false || disease.deathTransmission))
 			{
 				ctx.beginPath();
 				ctx.arc(cobaia[i].x, cobaia[i].y, disease.infectionRadius, 0, 2*Math.PI);
@@ -442,7 +474,7 @@ body{
 			}
 
 			//Draw walk direction
-			if (log.displayDirection && cobaia[i].isDead == false)
+			if (log.showDirection && cobaia[i].isDead == false)
 			{
 				ctx.beginPath();
 				ctx.arc(cobaia[i].x, cobaia[i].y, cobaia[i].safeDistance, cobaia[i].direction-cobaia[i].walkDeviation/2, cobaia[i].direction+cobaia[i].walkDeviation/2);
