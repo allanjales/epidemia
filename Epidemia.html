@@ -16,18 +16,41 @@ body{
 </head>
 
 <body>
-  <canvas id="canvas" width="1280" height="720"></canvas>
+	<canvas id="canvas" width="1280" height="720"></canvas>
+	<div>
+		<div>
+			<div>
+				<input id="populationSpread" type="checkbox" onChange="disease.spreadEveryone = this.checked" checked>
+				<label for="populationSpread">Population avoid</label>
+			</div>
+			<div>
+				<input id="deathTransmission" type="checkbox" onChange="disease.deathTransmission = this.checked">
+				<label for="deathTransmission">Transmission after death</label>
+			</div>
+		</div>
+		<div>
+			<div>
+				<input id="displayDirection" type="checkbox" onChange="log.displayDirection = this.checked">
+				<label for="displayDirection">Show direction</label>
+			</div>
+			<div>
+				<input id="infectionRadius" type="checkbox" onChange="log.infectionRadius = this.checked">
+				<label for="infectionRadius">Show infection radius</label>
+			</div>
+		</div>
+		<button onclick="disease.infectRandom()">Infect random</button>
+		<button onclick="game.speed > 0 ? game.setSpeed(0) : game.setSpeed(60)">Start/Pause</button>
+	</div>
 </body>
 </html>
 
 <script type="text/javascript">
 	//Parameters
-	var gamespeed = 60;
 	const cobaiasRadius = 10;
 
 	var game = {
 		fps: 60,
-		speed: 60,
+		speed: 0,
 		setSpeed: function(newSpeed)
 		{
 			//Change the variable
@@ -175,7 +198,7 @@ body{
 						//List every uninfected
 						for (var i = 0; i < cobaia.length; i++)
 						{
-							if (cobaia[i].id != this.id && cobaias.getDistance(this, cobaia[i]) <= this.safeDistance)
+							if (cobaia[i].id != this.id && cobaias.getDistance(this, cobaia[i]) <= this.safeDistance && (!cobaia[i].isDead || disease.deathTransmission))
 							{
 								if (!near || cobaias.getDistance(this, cobaia[i]) < cobaias.getDistance(this, near))
 								{
@@ -339,8 +362,7 @@ body{
 	var ctx = canvas.getContext("2d");
 
 	//Create cobaias
-	cobaias.create(80);
-	disease.infectRandom();
+	cobaias.create(100);
 
 	function step()
 	{
@@ -446,4 +468,6 @@ body{
 			}
 		}
 	}
+</script>
+<script type="text/javascript">
 </script>
