@@ -30,16 +30,16 @@ body{
 		</div>
 		<div>
 			<div>
-				<input id="displayDirection" type="checkbox" onChange="log.displayDirection = this.checked">
-				<label for="displayDirection">Show direction</label>
-			</div>
-			<div>
 				<input id="infectionRadius" type="checkbox" onChange="log.infectionRadius = this.checked">
 				<label for="infectionRadius">Show infection radius</label>
 			</div>
+			<div>
+				<input id="displayDirection" type="checkbox" onChange="log.displayDirection = this.checked">
+				<label for="displayDirection">Show direction</label>
+			</div>
 		</div>
-		<button onclick="disease.infectRandom()">Infect random</button>
 		<button onclick="game.speed > 0 ? game.setSpeed(0) : game.setSpeed(60)">Start/Pause</button>
+		<button onclick="disease.infectRandom()">Infect random</button>
 	</div>
 </body>
 </html>
