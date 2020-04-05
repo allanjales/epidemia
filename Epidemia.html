@@ -2,45 +2,73 @@
 <html>
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Pandemia</title>
+<meta name="author" content="Allan Jales https://github.com/allanjales/">
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
 <style>
 body{
 	margin: 0;
 	overflow: hidden;
-	}
+}
 #canvas{
 	background-color: #EEEEEE;
+}
+.custom-control-label::after{
+	cursor: pointer;
 }
 </style>
 
 </head>
 
 <body>
-	<canvas id="canvas" width="1280" height="720"></canvas>
-	<div>
-		<div>
-			<div>
-				<input id="populationSpread" type="checkbox" onChange="input[this.id](this)" checked>
-				<label for="populationSpread">Population avoid</label>
-			</div>
-			<div>
-				<input id="deathTransmission" type="checkbox" onChange="input[this.id](this)">
-				<label for="deathTransmission">Transmission after death</label>
+	<main class="m-auto" style="width: 1280px">
+		<canvas id="canvas" width="1280" height="720"></canvas>
+		<div class="p-3">
+			<div class="form-row">
+				<div class="form-group col-4">
+					<div class="custom-control custom-checkbox">
+						<input id="avoidHealthier" class="custom-control-input synchronous" type="checkbox">
+						<label for="avoidHealthier" class="custom-control-label">Population avoid healthier</label>
+					</div>
+					<div class="custom-control custom-checkbox">
+						<input id="avoidInfected" class="custom-control-input synchronous" type="checkbox" checked>
+						<label for="avoidInfected" class="custom-control-label">Population avoid infected</label>
+					</div>
+					<div class="custom-control custom-checkbox">
+						<input id="avoidSymptomatic" class="custom-control-input synchronous" type="checkbox" checked>
+						<label for="avoidSymptomatic" class="custom-control-label">Population avoid symptomatic</label>
+					</div>
+					<div class="custom-control custom-checkbox">
+						<input id="avoidDead" class="custom-control-input synchronous" type="checkbox">
+						<label for="avoidDead" class="custom-control-label">Population avoid dead</label>
+					</div>
+				</div>
+				<div class="form-group col-4">
+					<div class="custom-control custom-checkbox">
+						<input id="deathTransmission" class="custom-control-input synchronous" type="checkbox">
+						<label for="deathTransmission" class="custom-control-label">Transmission after death</label>
+					</div>
+				</div>
+				<div class="form-group col-4">
+					<div class="custom-control custom-checkbox">
+						<input id="showInfectionRadius" class="custom-control-input synchronous" type="checkbox">
+						<label for="showInfectionRadius" class="custom-control-label">Show infection radius</label>
+					</div>
+					<div class="custom-control custom-checkbox">
+						<input id="showSafeDistance" class="custom-control-input synchronous" type="checkbox">
+						<label for="showSafeDistance" class="custom-control-label">Show known safe distance</label>
+					</div>
+					<div class="custom-control custom-checkbox">
+						<input id="showDirection" class="custom-control-input synchronous" type="checkbox">
+						<label for="showDirection" class="custom-control-label">Show direction</label>
+					</div>
+				</div>
+				<button type="button" class="btn btn-light" onclick="game.gameSpeed > 0 ? game.setGameSpeed(0) : game.setGameSpeed(60)">Start/Pause</button>
+				<button type="button" class="btn btn-light ml-2" onclick="game.disease.infectRandom()">Infect random</button>
 			</div>
 		</div>
-		<div>
-			<div>
-				<input id="showInfectionRadius" type="checkbox" onChange="input[this.id](this)">
-				<label for="showInfectionRadius">Show infection radius</label>
-			</div>
-			<div>
-				<input id="showDirection" type="checkbox" onChange="input[this.id](this)">
-				<label for="showDirection">Show direction</label>
-			</div>
-		</div>
-		<button onclick="game.speed > 0 ? game.setGameSpeed(0) : game.setGameSpeed(60)">Start/Pause</button>
-		<button onclick="game.disease.infectRandom()">Infect random</button>
-	</div>
+	</main>
 </body>
 </html>
 
@@ -57,23 +85,46 @@ body{
 	{
 		game.createCobaias(100);
 		game.setGameSpeed(60);
-		input.update();
+		input.prepare();
 	}
 
 	//Input dealer
 	const input = {
+		prepare: function()
+		{
+			let inputs = document.getElementsByClassName('synchronous');
+
+			for (const input of inputs)
+			{
+				input.addEventListener('change', (event) => {this[event.target.id](event.target);});
+			}
+
+			input.update();
+		},
 		update: function()
 		{
-			let inputs = document.getElementsByTagName('input');
+			let inputs = document.getElementsByClassName('synchronous');
 
 			for (const input of inputs)
 			{
 				this[input.id](input);
 			}
 		},
-		populationSpread: function(object)
+		avoidHealthier: function(object)
 		{
-			game.disease.spreadEveryone = object.checked;
+			game.disease.prevention.avoidHealthier = object.checked;
+		},
+		avoidInfected: function(object)
+		{
+			game.disease.prevention.avoidInfected = object.checked;
+		},
+		avoidSymptomatic: function(object)
+		{
+			game.disease.prevention.avoidSymptomatic = object.checked;
+		},
+		avoidDead: function(object)
+		{
+			game.disease.prevention.avoidDead = object.checked;
 		},
 		deathTransmission: function(object)
 		{
@@ -82,6 +133,10 @@ body{
 		showInfectionRadius: function(object)
 		{
 			game.showInfectionRadius = object.checked;
+		},
+		showSafeDistance: function(object)
+		{
+			game.showSafeDistance = object.checked;
 		},
 		showDirection: function(object)
 		{
@@ -96,6 +151,7 @@ body{
 		color: {},
 		showDirection: false,
 		showInfectionRadius: false,
+		showSafeDistance: false,
 		setGameSpeed: function(newSpeed)
 		{
 			//Change the variable
@@ -173,10 +229,17 @@ body{
 						//List
 						let near;
 
-						//List every uninfected
+						//List everyone to get away
 						for (const cobaia of game.cobaias)
 						{
-							if (cobaia.id != this.id && game.get.distance(this, cobaia) <= this.safeDistance && (!cobaia.isDead || game.disease.deathTransmission))
+							if (cobaia.id != this.id && game.get.distance(this, cobaia) <= this.safeDistance
+								&& (
+										(game.disease.prevention.avoidHealthier 		&& (!cobaia.isInfected || !cobaia.isSymptomatic))
+										|| (game.disease.prevention.avoidInfected 		&& cobaia.isInfected)
+										|| (game.disease.prevention.avoidSymptomatic 	&& cobaia.isSymptomatic)
+										|| (game.disease.prevention.avoidDead			&& cobaia.isDead)
+									)
+								)
 							{
 								if (!near || game.get.distance(this, cobaia) < game.get.distance(this, near))
 								{
@@ -224,10 +287,10 @@ body{
 					},
 					walk: function()
 					{
-						if (!this.isSymptomatic && game.disease.spreadEveryone == false)
-							this.walkRandom();
-						else
+						if (game.disease.prevention.avoidHealthier || game.disease.prevention.avoidInfected || game.disease.prevention.avoidSymptomatic)
 							this.walkAway();
+						else
+							this.walkRandom();
 					},
 					infect: function()
 					{
@@ -343,7 +406,8 @@ body{
 		infected: 		"#AA6600",
 		symptomatic: 	"#AA0000",
 		dead: 			"#AAAAAA",
-		direction: 		"#888888"
+		direction: 		"#888888",
+		safeDistance: 	"#00AA00"
 		}
 
 	//Disease information
@@ -352,8 +416,13 @@ body{
 		infectionRate: 0.02,
 		symptomaticTime: 10000,
 		lifeTime: 20000,
-		spreadEveryone: true,
 		deathTransmission: false,
+		prevention: {
+			avoidHealthier: 	true,
+			avoidInfected: 		true,
+			avoidSymptomatic: 	true,
+			avoidDead: 			true
+		},
 		infectRandom: function()
 		{
 			//List
@@ -461,6 +530,15 @@ body{
 			if (cobaia.isDead)
 				ctx.fillStyle = game.color.dead;
 			ctx.fill();
+
+			//Draw safe distance
+			if (game.showSafeDistance && cobaia.isDead == false)
+			{
+				ctx.beginPath();
+				ctx.arc(cobaia.x, cobaia.y, cobaia.safeDistance, 0, 2*Math.PI);
+				ctx.strokeStyle = game.color.safeDistance;
+				ctx.stroke();
+			}
 
 			//Draw infection radius
 			if (game.showInfectionRadius && cobaia.isInfected && (cobaia.isDead == false || game.disease.deathTransmission))
