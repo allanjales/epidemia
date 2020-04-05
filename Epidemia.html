@@ -112,7 +112,7 @@ body{
 		},
 		createCobaias: function (number)
 		{
-			for (var i = 0; i < number; i++)
+			for (let i = 0; i < number; i++)
 			{
 				//Create cobaias
 				this.cobaias.push({
@@ -338,6 +338,14 @@ body{
 		}
 	}
 
+	game.color = {
+		normal: 		"#0000AA",
+		infected: 		"#AA6600",
+		symptomatic: 	"#AA0000",
+		dead: 			"#AAAAAA",
+		direction: 		"#888888"
+		}
+
 	//Disease information
 	game.disease = {
 		infectionRadius: 25,
@@ -376,14 +384,6 @@ body{
 			return false;
 		}
 	}
-
-	game.color = {
-		normal: 		"#0000AA",
-		infected: 		"#AA6600",
-		symptomatic: 	"#AA0000",
-		dead: 			"#AAAAAA",
-		direction: 		"#888888"
-		}
 
 	const date = {
 		get: function(){
