@@ -9,12 +9,11 @@
 <style>
 body{
 	margin: 0;
-	overflow: hidden;
 }
 #canvas{
 	background-color: #EEEEEE;
 }
-.custom-control-label::after{
+.custom-control-label::after, .custom-control-label{
 	cursor: pointer;
 }
 </style>
@@ -41,10 +40,10 @@ body{
 					</div>
 					<div class="custom-control custom-checkbox">
 						<input id="avoidDead" class="custom-control-input synchronous" type="checkbox">
-						<label for="avoidDead" class="custom-control-label">Population avoid dead</label>
+						<label for="avoidDead" class="custom-control-label">Population avoid dead bodies</label>
 					</div>
 				</div>
-				<div class="form-group col-4">
+				<div class="form-group col-4 pr-3">
 					<div class="custom-control custom-checkbox">
 						<input id="deathTransmission" class="custom-control-input synchronous" type="checkbox">
 						<label for="deathTransmission" class="custom-control-label">Transmission after death</label>
@@ -64,9 +63,28 @@ body{
 						<label for="showDirection" class="custom-control-label">Show direction</label>
 					</div>
 				</div>
-				<button type="button" class="btn btn-light" onclick="game.gameSpeed > 0 ? game.setGameSpeed(0) : game.setGameSpeed(60)">Start/Pause</button>
-				<button type="button" class="btn btn-light ml-2" onclick="game.disease.infectRandom()">Infect random</button>
 			</div>
+			<div class="form-row">
+				<div class="form-group col-3">
+					<div>
+						<label for="infectionRadius">Infection Radius: <span class="value-display"></span></label>
+						<input id="infectionRadius" type="range" class="custom-range synchronous" min="0" max="100" step="5" value="25">
+					</div>
+					<div>
+						<label for="infectionRate">Infection Rate: <span class="value-display percent"></span></label>
+						<input id="infectionRate" type="range" class="custom-range synchronous" min="0" max="1" step="0.01" value="0.02">
+					</div>
+				</div>
+				<div class="form-group col-3">
+					<div>
+						<label for="safeDistance">Known safe distance: <span class="value-display"></span></label>
+						<input id="safeDistance" type="range" class="custom-range synchronous" min="0" max="100" step="5" value="25">
+					</div>
+				</div>
+			</div>
+			<button type="button" class="btn btn-light" onclick="game.gameSpeed > 0 ? game.setGameSpeed(0) : game.setGameSpeed(60)">Start/Pause</button>
+			<button type="button" class="btn btn-light ml-2" onclick="game.disease.infectRandom()">Infect random</button>
+			<button type="button" class="btn btn-light ml-2" onclick="game.cobaias = []; game.createCobaias(100)">Restart</button>
 		</div>
 	</main>
 </body>
@@ -96,7 +114,13 @@ body{
 
 			for (const input of inputs)
 			{
-				input.addEventListener('change', (event) => {this[event.target.id](event.target);});
+				input.addEventListener('input', (event) => {
+					this[event.target.id](event.target);
+					this.updateDisplay(event.target);
+				});
+
+				//Update display now
+				this.updateDisplay(input);
 			}
 
 			input.update();
@@ -108,6 +132,20 @@ body{
 			for (const input of inputs)
 			{
 				this[input.id](input);
+			}
+		},
+		updateDisplay: function(object)
+		{
+			let valueDisplay = document.querySelector('label[for="' + object.id + '"] .value-display');
+
+			if (valueDisplay)
+			{
+				valueDisplay.innerHTML = object.value;
+
+				if (valueDisplay.classList.contains('percent'))
+				{
+					valueDisplay.innerHTML = Math.round(object.value*100) + '%';
+				}
 			}
 		},
 		avoidHealthier: function(object)
@@ -141,6 +179,18 @@ body{
 		showDirection: function(object)
 		{
 			game.showDirection = object.checked;
+		},
+		infectionRadius: function(object)
+		{
+			game.disease.prevention.safeDistance = object.value;
+		},
+		infectionRate: function(object)
+		{
+			game.disease.prevention.infectionRate = object.value;
+		},
+		safeDistance: function(object)
+		{
+			game.disease.prevention.safeDistance = object.value;
 		}
 	}
 
@@ -182,7 +232,6 @@ body{
 					isDead: 		false,
 					walkDistance: 	4,
 					walkDeviation: 	Math.PI/4,
-					safeDistance: 	25,
 					walkRandom: function()
 					{
 						let direction;
@@ -232,7 +281,7 @@ body{
 						//List everyone to get away
 						for (const cobaia of game.cobaias)
 						{
-							if (cobaia.id != this.id && game.get.distance(this, cobaia) <= this.safeDistance
+							if (cobaia.id != this.id && game.get.distance(this, cobaia) <= game.disease.prevention.safeDistance
 								&& (
 										(game.disease.prevention.avoidHealthier 		&& (!cobaia.isInfected || !cobaia.isSymptomatic))
 										|| (game.disease.prevention.avoidInfected 		&& cobaia.isInfected)
@@ -421,7 +470,8 @@ body{
 			avoidHealthier: 	true,
 			avoidInfected: 		true,
 			avoidSymptomatic: 	true,
-			avoidDead: 			true
+			avoidDead: 			true,
+			safeDistance: 		25
 		},
 		infectRandom: function()
 		{
@@ -535,7 +585,7 @@ body{
 			if (game.showSafeDistance && cobaia.isDead == false)
 			{
 				ctx.beginPath();
-				ctx.arc(cobaia.x, cobaia.y, cobaia.safeDistance, 0, 2*Math.PI);
+				ctx.arc(cobaia.x, cobaia.y, game.disease.prevention.safeDistance, 0, 2*Math.PI);
 				ctx.strokeStyle = game.color.safeDistance;
 				ctx.stroke();
 			}
@@ -557,13 +607,13 @@ body{
 			if (game.showDirection && cobaia.isDead == false)
 			{
 				ctx.beginPath();
-				ctx.arc(cobaia.x, cobaia.y, cobaia.safeDistance, cobaia.direction-cobaia.walkDeviation/2, cobaia.direction+cobaia.walkDeviation/2);
+				ctx.arc(cobaia.x, cobaia.y, game.disease.prevention.safeDistance, cobaia.direction-cobaia.walkDeviation/2, cobaia.direction+cobaia.walkDeviation/2);
 				ctx.strokeStyle = game.color.direction;
 				ctx.stroke();
 
 				let points = {
-					1: game.get.point(cobaia.x, cobaia.y, cobaia.safeDistance, cobaia.direction-cobaia.walkDeviation/2),
-					2: game.get.point(cobaia.x, cobaia.y, cobaia.safeDistance, cobaia.direction+cobaia.walkDeviation/2)
+					1: game.get.point(cobaia.x, cobaia.y, game.disease.prevention.safeDistance, cobaia.direction-cobaia.walkDeviation/2),
+					2: game.get.point(cobaia.x, cobaia.y, game.disease.prevention.safeDistance, cobaia.direction+cobaia.walkDeviation/2)
 				}
 
 				ctx.beginPath();
