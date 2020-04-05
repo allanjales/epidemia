@@ -67,18 +67,32 @@ body{
 			<div class="form-row">
 				<div class="form-group col-3">
 					<div>
-						<label for="infectionRadius">Infection Radius: <span class="value-display"></span></label>
+						<label for="untilSymptoms">Time until symptoms: <span class="value-display"></span>s</label>
+						<input id="untilSymptoms" type="range" class="custom-range synchronous" min="0" max="60" step="1" value="5">
+					</div>
+					<div>
+						<label for="untilDeath">Time until death: <span class="value-display"></span>s</label>
+						<input id="untilDeath" type="range" class="custom-range synchronous" min="0" max="60" step="1" value="10">
+					</div>
+				</div>
+				<div class="form-group col-3">
+					<div>
+						<label for="infectionRadius">Infection Radius: <span class="value-display"></span>px</label>
 						<input id="infectionRadius" type="range" class="custom-range synchronous" min="0" max="100" step="5" value="25">
 					</div>
 					<div>
-						<label for="infectionRate">Infection Rate: <span class="value-display percent"></span></label>
+						<label for="infectionRate">Infection Rate: <span class="value-display percent"></span>%</label>
 						<input id="infectionRate" type="range" class="custom-range synchronous" min="0" max="1" step="0.01" value="0.02">
 					</div>
 				</div>
 				<div class="form-group col-3">
 					<div>
-						<label for="safeDistance">Known safe distance: <span class="value-display"></span></label>
+						<label for="safeDistance">Known safe distance: <span class="value-display"></span>px</label>
 						<input id="safeDistance" type="range" class="custom-range synchronous" min="0" max="100" step="5" value="25">
+					</div>
+					<div>
+						<label for="gameSpeed">Game speed: <span class="value-display"></span>Hz</label>
+						<input id="gameSpeed" type="range" class="custom-range synchronous" min="0" max="250" step="10" value="60">
 					</div>
 				</div>
 			</div>
@@ -144,7 +158,7 @@ body{
 
 				if (valueDisplay.classList.contains('percent'))
 				{
-					valueDisplay.innerHTML = Math.round(object.value*100) + '%';
+					valueDisplay.innerHTML = Math.round(object.value*100);
 				}
 			}
 		},
@@ -191,6 +205,18 @@ body{
 		safeDistance: function(object)
 		{
 			game.disease.prevention.safeDistance = object.value;
+		},
+		untilSymptoms: function(object)
+		{
+			game.disease.time.untilSymptoms = object.value*1000;
+		},
+		untilDeath: function(object)
+		{
+			game.disease.time.untilDeath = object.value*1000;
+		},
+		gameSpeed: function(object)
+		{
+			game.setGameSpeed(object.value);
 		}
 	}
 
@@ -359,16 +385,16 @@ body{
 						{
 							let difference = date.difference(this.isInfected);
 
-							//If should be killed
-							if (difference >= game.disease.lifeTime)
-							{
-								this.kill();
-							}
-
 							//If should show symptoms
-							if (difference >= game.disease.symptomaticTime)
+							if (difference >= game.disease.time.untilSymptoms)
 							{
 								this.symptoms();
+							}
+
+							//If should be killed
+							if (difference >= game.disease.time.untilDeath)
+							{
+								this.kill();
 							}
 
 							return difference;
@@ -463,14 +489,16 @@ body{
 	game.disease = {
 		infectionRadius: 25,
 		infectionRate: 0.02,
-		symptomaticTime: 10000,
-		lifeTime: 20000,
+		time: {
+			untilSymptoms: 10000,
+			untilDeath: 20000,
+		},
 		deathTransmission: false,
 		prevention: {
-			avoidHealthier: 	true,
+			avoidHealthier: 	false,
 			avoidInfected: 		true,
 			avoidSymptomatic: 	true,
-			avoidDead: 			true,
+			avoidDead: 			false,
 			safeDistance: 		25
 		},
 		infectRandom: function()
