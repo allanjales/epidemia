@@ -31,7 +31,7 @@ body{
 						<label for="avoidHealthier" class="custom-control-label">Population avoid healthier</label>
 					</div>
 					<div class="custom-control custom-checkbox">
-						<input id="avoidInfected" class="custom-control-input synchronous" type="checkbox" checked>
+						<input id="avoidInfected" class="custom-control-input synchronous" type="checkbox">
 						<label for="avoidInfected" class="custom-control-label">Population avoid infected</label>
 					</div>
 					<div class="custom-control custom-checkbox">
@@ -78,7 +78,7 @@ body{
 				<div class="form-group col-3">
 					<div>
 						<label for="infectionRadius">Infection Radius: <span class="value-display"></span>px</label>
-						<input id="infectionRadius" type="range" class="custom-range synchronous" min="0" max="100" step="5" value="25">
+						<input id="infectionRadius" type="range" class="custom-range synchronous" min="10" max="100" step="5" value="25">
 					</div>
 					<div>
 						<label for="infectionRate">Infection Rate: <span class="value-display percent"></span>%</label>
@@ -88,7 +88,7 @@ body{
 				<div class="form-group col-3">
 					<div>
 						<label for="safeDistance">Known safe distance: <span class="value-display"></span>px</label>
-						<input id="safeDistance" type="range" class="custom-range synchronous" min="0" max="100" step="5" value="25">
+						<input id="safeDistance" type="range" class="custom-range synchronous" min="10" max="100" step="5" value="25">
 					</div>
 					<div>
 						<label for="gameSpeed">Game speed: <span class="value-display"></span>Hz</label>
@@ -99,6 +99,7 @@ body{
 			<button type="button" class="btn btn-light" onclick="game.gameSpeed > 0 ? game.setGameSpeed(0) : game.setGameSpeed(60)">Start/Pause</button>
 			<button type="button" class="btn btn-light ml-2" onclick="game.disease.infectRandom()">Infect random</button>
 			<button type="button" class="btn btn-light ml-2" onclick="game.cobaias = []; game.createCobaias(100)">Restart</button>
+			<button type="button" class="btn btn-light ml-2" onclick="game.createCobaias(10)">Criar +10</button>
 		</div>
 	</main>
 </body>
@@ -196,7 +197,7 @@ body{
 		},
 		infectionRadius: function(object)
 		{
-			game.disease.prevention.safeDistance = object.value;
+			game.disease.infectionRadius = object.value;
 		},
 		infectionRate: function(object)
 		{
@@ -251,13 +252,13 @@ body{
 					id: i,
 					x: Math.round(Math.random()*(canvas.width - cobaiasRadius*2)),
 					y: Math.round(Math.random()*(canvas.height - cobaiasRadius*2)),
-					radius: 10,
 					direction: 		null,
+					radius: 		10,
 					isInfected: 	false,
 					isSymptomatic: 	false,
 					isDead: 		false,
 					walkDistance: 	4,
-					walkDeviation: 	Math.PI/4,
+					directionDeviation: 	Math.PI/4,
 					walkRandom: function()
 					{
 						let direction;
@@ -269,7 +270,7 @@ body{
 						}
 						else
 						{
-							direction = this.direction + Math.random()*this.walkDeviation - this.walkDeviation/2;
+							direction = this.direction + Math.random()*this.directionDeviation - this.directionDeviation/2;
 						}
 
 						//Change directions if outside
@@ -307,12 +308,20 @@ body{
 						//List everyone to get away
 						for (const cobaia of game.cobaias)
 						{
+							let status = 'healthier';
+							if (cobaia.isInfected)
+								status = 'infected';
+							if (cobaia.isSymptomatic)
+								status = 'symptomatic';
+							if (cobaia.isDead)
+								status = 'dead';
+
 							if (cobaia.id != this.id && game.get.distance(this, cobaia) <= game.disease.prevention.safeDistance
 								&& (
-										(game.disease.prevention.avoidHealthier 		&& (!cobaia.isInfected || !cobaia.isSymptomatic))
-										|| (game.disease.prevention.avoidInfected 		&& cobaia.isInfected)
-										|| (game.disease.prevention.avoidSymptomatic 	&& cobaia.isSymptomatic)
-										|| (game.disease.prevention.avoidDead			&& cobaia.isDead)
+										   (game.disease.prevention.avoidHealthier 		&& status == 'healthier'  )
+										|| (game.disease.prevention.avoidInfected 		&& status == 'infected'   )
+										|| (game.disease.prevention.avoidSymptomatic 	&& status == 'symptomatic')
+										|| (game.disease.prevention.avoidDead			&& status == 'dead'       )
 									)
 								)
 							{
@@ -496,7 +505,7 @@ body{
 		deathTransmission: false,
 		prevention: {
 			avoidHealthier: 	false,
-			avoidInfected: 		true,
+			avoidInfected: 		false,
 			avoidSymptomatic: 	true,
 			avoidDead: 			false,
 			safeDistance: 		25
@@ -545,20 +554,12 @@ body{
 
 	function step()
 	{
-		//Change cobaias position
+		//Change cobaias position e check life time
 		for (const cobaia of game.cobaias)
 		{
 			if (!cobaia.isDead)
 			{
 				cobaia.walk();
-			}
-		}
-
-		//Kill cobaias
-		for (const cobaia of game.cobaias)
-		{
-			if (!cobaia.isDead)
-			{
 				cobaia.checkLifeTime();
 			}
 		}
@@ -597,6 +598,32 @@ body{
 		//Draw cobaias
 		for (const cobaia of game.cobaias)
 		{
+			//Draw walk direction
+			if (game.showDirection && cobaia.isDead == false)
+			{
+				ctx.beginPath();
+				ctx.arc(cobaia.x, cobaia.y, game.disease.prevention.safeDistance, cobaia.direction-cobaia.directionDeviation/2, cobaia.direction+cobaia.directionDeviation/2);
+				ctx.strokeStyle = game.color.direction;
+				ctx.stroke();
+
+				let points = {
+					1: game.get.point(cobaia.x, cobaia.y, game.disease.prevention.safeDistance, cobaia.direction-cobaia.directionDeviation/2),
+					2: game.get.point(cobaia.x, cobaia.y, game.disease.prevention.safeDistance, cobaia.direction+cobaia.directionDeviation/2)
+				}
+
+				ctx.beginPath();
+				ctx.moveTo(cobaia.x, cobaia.y);
+				ctx.lineTo(points[1].x, points[1].y);
+				ctx.strokeStyle = game.color.direction;
+				ctx.stroke();
+
+				ctx.beginPath();
+				ctx.moveTo(cobaia.x, cobaia.y);
+				ctx.lineTo(points[2].x, points[2].y);
+				ctx.strokeStyle = game.color.direction;
+				ctx.stroke();
+			}
+
 			//Draw body
 			ctx.beginPath();
 			ctx.arc(cobaia.x, cobaia.y, cobaiasRadius, 0, 2*Math.PI);
@@ -628,32 +655,6 @@ body{
 					ctx.strokeStyle = game.color.symptomatic;
 				if (cobaia.isDead)
 					ctx.strokeStyle = game.color.dead;
-				ctx.stroke();
-			}
-
-			//Draw walk direction
-			if (game.showDirection && cobaia.isDead == false)
-			{
-				ctx.beginPath();
-				ctx.arc(cobaia.x, cobaia.y, game.disease.prevention.safeDistance, cobaia.direction-cobaia.walkDeviation/2, cobaia.direction+cobaia.walkDeviation/2);
-				ctx.strokeStyle = game.color.direction;
-				ctx.stroke();
-
-				let points = {
-					1: game.get.point(cobaia.x, cobaia.y, game.disease.prevention.safeDistance, cobaia.direction-cobaia.walkDeviation/2),
-					2: game.get.point(cobaia.x, cobaia.y, game.disease.prevention.safeDistance, cobaia.direction+cobaia.walkDeviation/2)
-				}
-
-				ctx.beginPath();
-				ctx.moveTo(cobaia.x, cobaia.y);
-				ctx.lineTo(points[1].x, points[1].y);
-				ctx.strokeStyle = game.color.direction;
-				ctx.stroke();
-
-				ctx.beginPath();
-				ctx.moveTo(cobaia.x, cobaia.y);
-				ctx.lineTo(points[2].x, points[2].y);
-				ctx.strokeStyle = game.color.direction;
 				ctx.stroke();
 			}
 		}
