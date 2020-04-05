@@ -38,8 +38,8 @@ body{
 				<label for="showDirection">Show direction</label>
 			</div>
 		</div>
-		<button onclick="game.speed > 0 ? game.setSpeed(0) : game.setSpeed(60)">Start/Pause</button>
-		<button onclick="disease.infectRandom()">Infect random</button>
+		<button onclick="game.speed > 0 ? game.setGameSpeed(0) : game.setGameSpeed(60)">Start/Pause</button>
+		<button onclick="game.disease.infectRandom()">Infect random</button>
 	</div>
 </body>
 </html>
@@ -48,36 +48,15 @@ body{
 	//Parameters
 	const cobaiasRadius = 10;
 
-	var game = {
-		fps: 60,
-		speed: 0,
-		setSpeed: function(newSpeed)
-		{
-			//Change the variable
-			this.speed = (newSpeed > 0) ? newSpeed : 0;
-			
-			//Reset previus interval
-			clearInterval(this.stepInterval);
-			
-			//Change the interval
-			if (this.speed > 0)
-				this.stepInterval = setInterval(step, 1000/this.speed);
-				
-			return this.speed;
-		}
-	}
+	//Get canvas
+	const canvas = document.getElementById("canvas");
+	const ctx = canvas.getContext("2d");
 
-	//On page load
+	//After page load
 	window.onload = function()
 	{
-		step();
-		draw();
-
-		//(function, millisecond)
-		setInterval(draw, 1000/game.fps);
-		game.setSpeed(60);
-
-		//Get input information
+		game.createCobaias(100);
+		game.setGameSpeed(60);
 		input.update();
 	}
 
@@ -85,93 +64,58 @@ body{
 	const input = {
 		update: function()
 		{
-			var input = document.getElementsByTagName('input');
+			let inputs = document.getElementsByTagName('input');
 
-			for (var i = 0; i < input.length; i++)
+			for (const input of inputs)
 			{
-				this[input[i].id](input[i]);
+				this[input.id](input);
 			}
 		},
 		populationSpread: function(object)
 		{
-			disease.spreadEveryone = object.checked;
+			game.disease.spreadEveryone = object.checked;
 		},
 		deathTransmission: function(object)
 		{
-			disease.deathTransmission = object.checked;
+			game.disease.deathTransmission = object.checked;
 		},
 		showInfectionRadius: function(object)
 		{
-			log.showInfectionRadius = object.checked;
+			game.showInfectionRadius = object.checked;
 		},
 		showDirection: function(object)
 		{
-			log.showDirection = object.checked;
+			game.showDirection = object.checked;
 		}
 	}
 
-	var log = {
+	const game = {
+		gameSpeed: 0,
+		cobaias: [],
+		disease: {},
+		color: {},
 		showDirection: false,
-		showInfectionRadius: false
-	}
-
-	const disease = {
-		infectionRadius: 25,
-		infectionRate: 0.02,		//Chance of getting disease
-		deathTransmission: false,	//Transmit after death
-		symptomaticTime: 10000,		//In milliseconds
-		lifeTime: 20000,			//In milliseconds
-		spreadEveryone: true,
-		infectRandom: function()
+		showInfectionRadius: false,
+		setGameSpeed: function(newSpeed)
 		{
-			//List
-			var uninfected = [];
-
-			//List every uninfected
-			for (var i = 0; i < cobaia.length; i++)
-			{
-				if (!cobaia[i].isInfected)
-				{
-					uninfected.push(i);
-				}
-			}
-
-			//Pick one of them
-			var picked = uninfected[Math.round(Math.random()*(uninfected.length-1))];
-
-			//infect
-			cobaia[picked].infect();
-
-			return picked;
-		}
-	}
-
-	const color = {
-		normal: 		"#0000AA",
-		infected: 		"#AA6600",
-		symptomatic: 	"#AA0000",
-		dead: 			"#AAAAAA",
-		direction: 		"#888888"
-		}
-
-	const date = {
-		get: function(){
-			var now = new Date();
-			return now;
+			//Change the variable
+			this.gameSpeed = (newSpeed > 0) ? newSpeed : 0;
+			
+			//Reset previus interval
+			clearInterval(this.stepInterval);
+			
+			//Change the interval
+			if (this.gameSpeed > 0)
+				this.stepInterval = setInterval(step, 1000/this.gameSpeed);
+				
+			return this.gameSpeed;
 		},
-		difference: function(before){
-			var now = new Date();
-			return now - before;
-		}
-	}
-
-	const cobaias = {
-		create: function (number)
+		createCobaias: function (number)
 		{
 			for (var i = 0; i < number; i++)
 			{
 				//Create cobaias
-				cobaia[i] = {
+				this.cobaias.push({
 					id: i,
 					x: Math.round(Math.random()*(canvas.width - cobaiasRadius*2)),
 					y: Math.round(Math.random()*(canvas.height - cobaiasRadius*2)),
@@ -185,14 +129,16 @@ body{
 					safeDistance: 	25,
 					walkRandom: function()
 					{
-						//Choose direction
+						let direction;
+
+						//Choose new direction
 						if (this.direction == null)
 						{
-							var direction = Math.random()*2*Math.PI;
+							direction = Math.random()*2*Math.PI;
 						}
 						else
 						{
-							var direction = this.direction + Math.random()*this.walkDeviation - this.walkDeviation/2;
+							direction = this.direction + Math.random()*this.walkDeviation - this.walkDeviation/2;
 						}
 
 						//Change directions if outside
@@ -214,8 +160,8 @@ body{
 						}
 
 						//Estimates new position
-						var deltaX = Math.cos(direction)*this.walkDistance;
-						var deltaY = Math.sin(direction)*this.walkDistance;
+						let deltaX = Math.cos(direction)*this.walkDistance;
+						let deltaY = Math.sin(direction)*this.walkDistance;
 						
 						//Change cobaia proprieties
 						this.direction = direction;
@@ -225,16 +171,16 @@ body{
 					walkAway: function()
 					{
 						//List
-						var near;
+						let near;
 
 						//List every uninfected
-						for (var i = 0; i < cobaia.length; i++)
+						for (const cobaia of game.cobaias)
 						{
-							if (cobaia[i].id != this.id && cobaias.getDistance(this, cobaia[i]) <= this.safeDistance && (!cobaia[i].isDead || disease.deathTransmission))
+							if (cobaia.id != this.id && game.get.distance(this, cobaia) <= this.safeDistance && (!cobaia.isDead || game.disease.deathTransmission))
 							{
-								if (!near || cobaias.getDistance(this, cobaia[i]) < cobaias.getDistance(this, near))
+								if (!near || game.get.distance(this, cobaia) < game.get.distance(this, near))
 								{
-									near = cobaia[i];
+									near = cobaia;
 								}
 							}
 						}
@@ -242,7 +188,7 @@ body{
 						//Walk on direction
 						if (near)
 						{
-							var direction = cobaias.getAngle(this, near) + Math.PI;
+							let direction = game.get.angle(this, near) + Math.PI;
 
 							//Change directions if outside
 							if (this.x >= canvas.width - cobaiasRadius)
@@ -263,8 +209,8 @@ body{
 							}
 
 							//Estimates new position
-							var deltaX = Math.cos(direction)*this.walkDistance;
-							var deltaY = Math.sin(direction)*this.walkDistance;
+							let deltaX = Math.cos(direction)*this.walkDistance;
+							let deltaY = Math.sin(direction)*this.walkDistance;
 							
 							//Change cobaia proprieties
 							this.direction = direction;
@@ -278,7 +224,7 @@ body{
 					},
 					walk: function()
 					{
-						if (!this.isSymptomatic && disease.spreadEveryone == false)
+						if (!this.isSymptomatic && game.disease.spreadEveryone == false)
 							this.walkRandom();
 						else
 							this.walkAway();
@@ -299,16 +245,16 @@ body{
 					{
 						if (this.isInfected)
 						{
-							var difference = date.difference(this.isInfected);
+							let difference = date.difference(this.isInfected);
 
 							//If should be killed
-							if (difference >= disease.lifeTime)
+							if (difference >= game.disease.lifeTime)
 							{
 								this.kill();
 							}
 
 							//If should show symptoms
-							if (difference >= disease.symptomaticTime)
+							if (difference >= game.disease.symptomaticTime)
 							{
 								this.symptoms();
 							}
@@ -316,53 +262,59 @@ body{
 							return difference;
 						}
 					}
-				}
+				})
 			}
 		},
-		getDistance: function (cobaia1, cobaia2)
-		{
-			return Math.sqrt(Math.pow((cobaia1.x - cobaia2.x),2) + Math.pow((cobaia1.y - cobaia2.y),2));
-		},
-		getAngle: function(cobaia1, cobaia2)
-		{
-			var angle = Math.atan((cobaia2.y - cobaia1.y)/(cobaia2.x - cobaia1.x));
-
-			//Corrects angle
-			if (cobaia1.x >= cobaia2.x)
+		get: {
+			distance: function (cobaia1, cobaia2)
 			{
-				angle += Math.PI;
-			}
+				let distance = Math.sqrt(Math.pow((cobaia1.x - cobaia2.x),2) + Math.pow((cobaia1.y - cobaia2.y),2));
 
-			return angle
-		},
-		getPoint: function(x, y, distance, angle)
-		{
-			return {
-				x: x + Math.cos(angle)*distance,
-				y: y + Math.sin(angle)*distance
+				return distance;
+			},
+			angle: function(cobaia1, cobaia2)
+			{
+				let angle = Math.atan((cobaia2.y - cobaia1.y)/(cobaia2.x - cobaia1.x));
+
+				//Corrects angle
+				if (cobaia1.x >= cobaia2.x)
+				{
+					angle += Math.PI;
+				}
+
+				return angle;
+			},
+			point: function(x, y, distance, angle)
+			{
+				let point = {
+					x: x + Math.cos(angle)*distance,
+					y: y + Math.sin(angle)*distance
+				}
+
+				return point;
 			}
 		},
 		count: function()
 		{
-			var count = {
+			let count = {
 						health: 0,
 						infected: 0,
 						dead: 0
 						}
 
-			for (var i = 0; i < cobaia.length; i++)
+			for (cobaia of game.cobaias)
 			{
-				if (cobaia[i].isDead)
+				if (cobaia.isDead)
 				{
 					count.dead++;
 					continue;
 				}
-				if (cobaia[i].isInfected)
+				if (cobaia.isInfected)
 				{
 					count.infected++;
 					continue;
 				}
-				if (!cobaia[i].isInfected)
+				if (!cobaia.isInfected)
 				{
 					count.health++;
 					continue;
@@ -373,133 +325,184 @@ body{
 		},
 		percent: function()
 		{
-			var count = this.count();
-			var total = count.health + count.infected + count.dead;
+			let count = this.count();
+			let total = count.health + count.infected + count.dead;
 
-			var percent = {
-						health: count.health/total,
-						infected: count.infected/total,
-						dead: count.dead/total
+			let percent = {
+						health: count.health/total*100,
+						infected: count.infected/total*100,
+						dead: count.dead/total*100
 						}
 
 			return percent;
 		}
 	}
 
-	//Fixed variables
-	var cobaia = [];
+	//Disease information
+	game.disease = {
+		infectionRadius: 25,
+		infectionRate: 0.02,
+		symptomaticTime: 10000,
+		lifeTime: 20000,
+		spreadEveryone: true,
+		deathTransmission: false,
+		infectRandom: function()
+		{
+			//List
+			let uninfected = [];
 
-	//Get canvas
-	var canvas = document.getElementById("canvas");
-	var ctx = canvas.getContext("2d");
+			//List every uninfected
+			for (const cobaia of game.cobaias)
+			{
+				if (!cobaia.isInfected)
+				{
+					uninfected.push(cobaia.id);
+				}
+			}
 
-	//Create cobaias
-	cobaias.create(100);
+			//Get random key
+			let key = Math.round(Math.random()*(uninfected.length-1));
+
+			//Pick key from array
+			let picked = uninfected[key];
+
+			//If got a cobaia, infect
+			if (picked || picked === 0)
+			{
+				game.cobaias[picked].infect();
+				return picked;
+			}
+
+			return false;
+		}
+	}
+
+	game.color = {
+		normal: 		"#0000AA",
+		infected: 		"#AA6600",
+		symptomatic: 	"#AA0000",
+		dead: 			"#AAAAAA",
+		direction: 		"#888888"
+		}
+
+	const date = {
+		get: function(){
+			let now = new Date();
+			return now;
+		},
+		difference: function(before){
+			let now = new Date();
+			return now - before;
+		}
+	}
 
 	function step()
 	{
 		//Change cobaias position
-		for (var i = 0; i < cobaia.length; i++)
+		for (const cobaia of game.cobaias)
 		{
-			if (!cobaia[i].isDead)
+			if (!cobaia.isDead)
 			{
-				cobaia[i].walk();
+				cobaia.walk();
 			}
 		}
 
 		//Kill cobaias
-		for (var i = 0; i < cobaia.length; i++)
+		for (const cobaia of game.cobaias)
 		{
-			if (!cobaia[i].isDead)
+			if (!cobaia.isDead)
 			{
-				cobaia[i].checkLifeTime();
+				cobaia.checkLifeTime();
 			}
 		}
 
 		//Infection
-		for (var i = 0; i < cobaia.length; i++)
+		for (const cobaia of game.cobaias)
 		{
 			//If is not infected
-			if (cobaia[i].isInfected == false)
+			if (cobaia.isInfected == false)
 			{
 				//Check distance to others
-				for (var j = 0; j < cobaia.length; j++)
+				for (const otherCobaia of game.cobaias)
 				{
 					//If a infected is near
-					if (cobaia[j].isInfected && cobaias.getDistance(cobaia[i], cobaia[j]) <= disease.infectionRadius && (disease.deathTransmission || !cobaia[j].isDead))
+					if (otherCobaia.isInfected && game.get.distance(cobaia, otherCobaia) <= game.disease.infectionRadius && (game.disease.deathTransmission || !otherCobaia.isDead))
 					{
 						//Should it be infected?
-						if (Math.random() <= disease.infectionRate)
+						if (Math.random() <= game.disease.infectionRate)
 						{
-							cobaia[i].infect();
+							cobaia.infect();
 						}
 					}
 				}
 			}
 		}
 	}
+	
+	renderScreen();
 
-	//Draw canvas
-	function draw()
+	//Draw in canvas
+	function renderScreen()
 	{
 		//Clear canvas
 		ctx.clearRect(0, 0, canvas.width, canvas.height);
 
 		//Draw cobaias
-		for (var i = 0; i < cobaia.length; i++)
+		for (const cobaia of game.cobaias)
 		{
 			//Draw body
 			ctx.beginPath();
-			ctx.arc(cobaia[i].x, cobaia[i].y, cobaiasRadius, 0, 2*Math.PI);
-			ctx.fillStyle =  color.normal;
-			if (cobaia[i].isInfected)
-				ctx.fillStyle = color.infected;
-			if (cobaia[i].isSymptomatic)
-				ctx.fillStyle = color.symptomatic;
-			if (cobaia[i].isDead)
-				ctx.fillStyle = color.dead;
+			ctx.arc(cobaia.x, cobaia.y, cobaiasRadius, 0, 2*Math.PI);
+			ctx.fillStyle =  game.color.normal;
+			if (cobaia.isInfected)
+				ctx.fillStyle = game.color.infected;
+			if (cobaia.isSymptomatic)
+				ctx.fillStyle = game.color.symptomatic;
+			if (cobaia.isDead)
+				ctx.fillStyle = game.color.dead;
 			ctx.fill();
 
 			//Draw infection radius
-			if (log.showInfectionRadius && cobaia[i].isInfected && (cobaia[i].isDead == false || disease.deathTransmission))
+			if (game.showInfectionRadius && cobaia.isInfected && (cobaia.isDead == false || game.disease.deathTransmission))
 			{
 				ctx.beginPath();
-				ctx.arc(cobaia[i].x, cobaia[i].y, disease.infectionRadius, 0, 2*Math.PI);
-				ctx.strokeStyle = color.infected;
-				if (cobaia[i].isSymptomatic)
-					ctx.strokeStyle = color.symptomatic;
-				if (cobaia[i].isDead)
-					ctx.strokeStyle = color.dead;
+				ctx.arc(cobaia.x, cobaia.y, game.disease.infectionRadius, 0, 2*Math.PI);
+				ctx.strokeStyle = game.color.infected;
+				if (cobaia.isSymptomatic)
+					ctx.strokeStyle = game.color.symptomatic;
+				if (cobaia.isDead)
+					ctx.strokeStyle = game.color.dead;
 				ctx.stroke();
 			}
 
 			//Draw walk direction
-			if (log.showDirection && cobaia[i].isDead == false)
+			if (game.showDirection && cobaia.isDead == false)
 			{
 				ctx.beginPath();
-				ctx.arc(cobaia[i].x, cobaia[i].y, cobaia[i].safeDistance, cobaia[i].direction-cobaia[i].walkDeviation/2, cobaia[i].direction+cobaia[i].walkDeviation/2);
-				ctx.strokeStyle = color.direction;
+				ctx.arc(cobaia.x, cobaia.y, cobaia.safeDistance, cobaia.direction-cobaia.walkDeviation/2, cobaia.direction+cobaia.walkDeviation/2);
+				ctx.strokeStyle = game.color.direction;
 				ctx.stroke();
 
-				var points = {
-					1: cobaias.getPoint(cobaia[i].x, cobaia[i].y, cobaia[i].safeDistance, cobaia[i].direction-cobaia[i].walkDeviation/2),
-					2: cobaias.getPoint(cobaia[i].x, cobaia[i].y, cobaia[i].safeDistance, cobaia[i].direction+cobaia[i].walkDeviation/2)
+				let points = {
+					1: game.get.point(cobaia.x, cobaia.y, cobaia.safeDistance, cobaia.direction-cobaia.walkDeviation/2),
+					2: game.get.point(cobaia.x, cobaia.y, cobaia.safeDistance, cobaia.direction+cobaia.walkDeviation/2)
 				}
 
 				ctx.beginPath();
-				ctx.moveTo(cobaia[i].x, cobaia[i].y);
+				ctx.moveTo(cobaia.x, cobaia.y);
 				ctx.lineTo(points[1].x, points[1].y);
-				ctx.strokeStyle = color.direction;
+				ctx.strokeStyle = game.color.direction;
 				ctx.stroke();
 
 				ctx.beginPath();
-				ctx.moveTo(cobaia[i].x, cobaia[i].y);
+				ctx.moveTo(cobaia.x, cobaia.y);
 				ctx.lineTo(points[2].x, points[2].y);
-				ctx.strokeStyle = color.direction;
+				ctx.strokeStyle = game.color.direction;
 				ctx.stroke();
 			}
 		}
+
+		//Recursive
+		requestAnimationFrame(renderScreen);
 	}
-</script>
-<script type="text/javascript">
 </script>
