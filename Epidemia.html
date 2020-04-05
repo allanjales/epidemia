@@ -201,7 +201,7 @@ body{
 		},
 		infectionRate: function(object)
 		{
-			game.disease.prevention.infectionRate = object.value;
+			game.disease.infectionRate = object.value;
 		},
 		safeDistance: function(object)
 		{
@@ -318,7 +318,7 @@ body{
 
 							if (cobaia.id != this.id && game.get.distance(this, cobaia) <= game.disease.prevention.safeDistance
 								&& (
-										   (game.disease.prevention.avoidHealthier 		&& status == 'healthier'  )
+										(game.disease.prevention.avoidHealthier 		&& status == 'healthier'  )
 										|| (game.disease.prevention.avoidInfected 		&& status == 'infected'   )
 										|| (game.disease.prevention.avoidSymptomatic 	&& status == 'symptomatic')
 										|| (game.disease.prevention.avoidDead			&& status == 'dead'       )
