@@ -651,10 +651,12 @@ body{
 				ctx.beginPath();
 				ctx.arc(cobaia.x, cobaia.y, game.disease.infectionRadius, 0, 2*Math.PI);
 				ctx.strokeStyle = game.color.infected;
+				/*
 				if (cobaia.isSymptomatic)
 					ctx.strokeStyle = game.color.symptomatic;
 				if (cobaia.isDead)
 					ctx.strokeStyle = game.color.dead;
+				*/
 				ctx.stroke();
 			}
 		}
