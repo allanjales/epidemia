@@ -213,11 +213,11 @@ body{
 		},
 		untilSymptoms: function(object)
 		{
-			game.disease.time.untilSymptoms = object.value*1000;
+			game.disease.time.untilSymptoms = object.value;
 		},
 		untilDeath: function(object)
 		{
-			game.disease.time.untilDeath = object.value*1000;
+			game.disease.time.untilDeath = object.value;
 		},
 		gameSpeed: function(object)
 		{
@@ -503,8 +503,8 @@ body{
 		infectionRadius: 25,
 		infectionRate: 0.02,
 		time: {
-			untilSymptoms: 10000,
-			untilDeath: 20000,
+			untilSymptoms: 10,
+			untilDeath: 20,
 		},
 		deathTransmission: false,
 		prevention: {
@@ -548,7 +548,7 @@ body{
 	const date = {
 		now: 0,
 		set: function(){
-			this.now += 1000/60;
+			this.now += 1/60;
 		},
 		get: function(){
 			//let now = new Date();
