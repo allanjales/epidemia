@@ -547,16 +547,55 @@ body{
 
 	const date = {
 		now: 0,
-		set: function(){
-			this.now += 1/60;
+		set: function()
+		{
+			this.now += 1;
 		},
-		get: function(){
+		get: function()
+		{
 			//let now = new Date();
-			return this.now;
+			return this.now/60;
 		},
-		difference: function(before){
+		difference: function(before)
+		{
 			//let now = new Date();
-			return this.now - before;
+			return this.get() - before;
+		}
+	}
+
+	const graph = {
+		dataMaxSize: 60,
+		data: [],
+		lastStoredTime: null,
+		secondsUntilStoreAgain: 1,
+		storeData: function()
+		{
+			let data = game.percent();
+
+			//Store data
+			this.data.push(data);
+
+			//Limit array size
+			while (this.data.length > this.dataMaxSize)
+			{
+				//Remove firsts one
+				this.data.shift();
+			}
+
+			//Save when stored
+			this.lastStoredTime = date.get();
+
+			return data;
+		},
+		tryToStore: function()
+		{
+			if (this.lastStoredTime == null || date.difference(this.lastStoredTime) >= this.secondsUntilStoreAgain)
+			{
+				this.storeData();
+				return true;
+			}
+
+			return false;
 		}
 	}
 
@@ -595,6 +634,9 @@ body{
 				}
 			}
 		}
+
+		//Stores data
+		graph.tryToStore();
 	}
 	
 	renderScreen();
